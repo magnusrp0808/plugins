@@ -1,9 +1,12 @@
 //=============================================================================
+// Erosion System
 // MRP_ErosionSystem.js
+// By Magnus0808 || Magnus Rubin Peterson
+// Version 1.0
 //=============================================================================
 
 /*:
- * @plugindesc ErosionSystem
+ * @plugindesc Erosion System
  * @author Magnus0808
  *
  * @help This plugin brings an erosion system to your game!
@@ -11,7 +14,7 @@
  * which is the base erosion rate for all attacks. You can then also
  * specify the maximum and minimum.
  * 
- * E.g. with an erotion rate on 10% then if you deal 100dmg to a target with
+ * E.g. with an erosion rate on 10% then if you deal 100dmg to a target with
  * 1000hp, then the target will have 900hp left like normal. However, the targets
  * maximum hp will decrease by 10 to 890hp.
  *
@@ -28,7 +31,7 @@
  * E.g. if you have a skill called Bite with the note tag <flatErosion:100>
  * then everytime you use this skill the target will lose 100 maximum hp for
  * the battle. It should be noted that this does not count towards the maximum
- * erosion rate, and can therefore potentionally deal an even highr amount of 
+ * erosion rate, and can therefore potentionally deal an even higher amount of 
  * erosion.
  *
  * @param Natural Erosion Rate
