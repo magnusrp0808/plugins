@@ -2,7 +2,7 @@
 // Erosion System
 // MRP_ErosionSystem.js
 // By Magnus0808 || Magnus Rubin Peterson
-// Version 1.0
+// Version 1.1
 //=============================================================================
 
 /*:
@@ -34,6 +34,12 @@
  * erosion rate, and can therefore potentionally deal an even higher amount of 
  * erosion.
  *
+ * [CHANGE LOG]
+ * Version 1.1:
+ *	Made a parameter for if you regen health after battle.
+ * Version 1.0:
+ * 	First Release
+ * 
  * @param Natural Erosion Rate
  * @type Number
  * @decimals 3
@@ -64,6 +70,12 @@
  * @desc If true then it is possible to die from erosion! This happens if
  * when you take erosion dmg it makes your max hp become lower than 1!
  * @default false
+ *
+ * @param Stable Health Procent
+ * @type Boolean
+ * @desc If true then you regen health after each battle to have the same procent of health left
+ * compared to what you had at the end of the battle.
+ * @default true
  */
  
 (function() {
@@ -75,6 +87,7 @@
 	ErosionSystem.minErosion = Number(ErosionSystem.Parameters['Min Erosion Rate']);
 	ErosionSystem.negativeRegenErosion = (String(ErosionSystem.Parameters['Negative HP Regen Erosion']) == 'true');
 	ErosionSystem.dieErosion = (String(ErosionSystem.Parameters['Can Die From Erosion']) == 'true');
+	ErosionSystem.stableHealth = (String(ErosionSystem.Parameters['Stable Health Procent']) == 'true');
 	
 	// Changes to Game_Battler
 	var old_init = Game_Battler.prototype.initMembers;
@@ -124,7 +137,7 @@
 		var procentHealth = this._hp/this.mhp;
 		this._paramPlus[0] += this._erosionDamaged;
 		this._erosionDamaged = 0;
-		this._hp =  Math.floor(procentHealth * this.paramBase(0));		
+		if(ErosionSystem.stableHealth) this._hp =  Math.floor(procentHealth * this.paramBase(0));		
 	}
 
 	Game_Battler.prototype.applyErosion = function(value, action) {
@@ -149,6 +162,7 @@
 		
 		this.applyProcentErosion(value, erosionRate);
 		this.applyFlatErosion(flatErosion);
+		console.log(this);
 	}
 	
 	Game_Battler.prototype.applyProcentErosion = function(value, erosionRate){
