@@ -2,7 +2,7 @@
 // Erosion System
 // MRP_ErosionSystem.js
 // By Magnus0808 || Magnus Rubin Peterson
-// Version 1.1
+// Version 1.2
 //=============================================================================
 
 /*:
@@ -35,10 +35,15 @@
  * erosion.
  *
  * [CHANGE LOG]
+ * Version 1.2:
+ *	+ Made the <flatErosion:xxx> notetag work for Equipment. It adds permanent erosion while the equipment is worn.
+ *	+ Made the <baseErosion::x.xxx> and <procentErosion:x.xxx> work for Classes. Classes has priority over Actors
+ *	  this means that if an Actor and its Class both have the <baseErosion:x.xxx> tag the then the one of the Class
+ *	  will take effect and not the one of the Actor.
  * Version 1.1:
- *	Made a parameter for if you regen health after battle.
+ *	+ Made a parameter for if you regen health after battle.
  * Version 1.0:
- * 	First Release
+ * 	+ First Release
  * 
  * @param Natural Erosion Rate
  * @type Number
@@ -94,6 +99,7 @@
 	Game_Battler.prototype.initMembers = function() {
 		old_init.call(this);
 		this._erosionDamaged = 0;
+		this._persistantErosion = 0;
 	};
 	
 	
@@ -135,8 +141,8 @@
 	
 	Game_Battler.prototype.removeErosion = function() {
 		var procentHealth = this._hp/this.mhp;
-		this._paramPlus[0] += this._erosionDamaged;
-		this._erosionDamaged = 0;
+		this._paramPlus[0] += this._erosionDamaged - this._persistantErosion;
+		this._erosionDamaged = this._persistantErosion;
 		if(ErosionSystem.stableHealth) this._hp =  Math.floor(procentHealth * this.paramBase(0));		
 	}
 
@@ -162,7 +168,6 @@
 		
 		this.applyProcentErosion(value, erosionRate);
 		this.applyFlatErosion(flatErosion);
-		console.log(this);
 	}
 	
 	Game_Battler.prototype.applyProcentErosion = function(value, erosionRate){
@@ -197,12 +202,62 @@
 		}
 	};
 	
+	Game_Battler.prototype.getPersistantErosion = function(){
+		return 0;
+	}
+	
+	Game_Battler.prototype.updatePersistantErosion = function(){
+		var difference = this.getPersistantErosion() - this._persistantErosion;
+		this._paramPlus[0] -= difference;
+		this._persistantErosion += difference;
+		this._erosionDamaged = this._persistantErosion;
+		if(this._hp > this.mhp) this._hp = this.mhp;
+		if(ErosionSystem.dieErosion && (this.paramBase(0) + this._paramPlus[0]) <= 0){
+			this.die();
+		}
+	}
+	
 	
 	// Changes to Actor
+	
+	MRP_GA_SETUP_OLD = Game_Actor.prototype.setup;
+	Game_Actor.prototype.setup = function(actorId) {
+		MRP_GA_SETUP_OLD.call(this, actorId);
+		this.updatePersistantErosion();
+	};
+	
+	Game_Actor.prototype.getBaseErosionRate = function() {
+		var baseErosion = 0;
+		var actor = this.actor();
+		if(actor){
+			// Handle Class baseErosion
+			var currentClass = this.currentClass();
+			
+			if(currentClass.meta.baseErosion){
+				baseErosion += Number(currentClass.meta.baseErosion);
+			} else if (actor.meta.baseErosion) {
+				baseErosion += Number(actor.meta.baseErosion);
+			} else {				
+				baseErosion += ErosionSystem.baseErosion;
+			}
+			
+			if(actor.meta.procentErosion){
+				baseErosion += Number(actor.meta.procentErosion);
+			}
+			if(currentClass.meta.procentErosion){
+				baseErosion += Number(currentClass.meta.procentErosion);
+			}
+		} else {
+			baseErosion += ErosionSystem.baseErosion;
+		}
+		return baseErosion;
+	}
+	
 	Game_Actor.prototype.getErosionRate = function() {
 		var erosionRate = Game_Battler.prototype.getErosionRate.call(this);
 		var actor = this.actor();
 		if(actor){
+			// Handle Equips
 			var equips = actor.equips;
 			for(var i = 0; i < equips.length; i++){
 				var equipment;
@@ -221,6 +276,45 @@
 		}
 		return erosionRate;
 	}
+	
+	Game_Actor.prototype.getPersistantErosion = function(){
+		var persistantErosion = Game_Battler.prototype.getPersistantErosion.call(this);
+		var actor = this.actor();
+		if(actor){
+			var equips = this._equips;
+			for(var i = 0; i < equips.length; i++){
+				var equipment;
+				if (i == 0){ // is Weapon
+					equipment = $dataWeapons[equips[i]._itemId];
+				} else { // is armor
+					equipment = $dataArmors[equips[i]._itemId];
+				}
+				if(equipment){
+					if(equipment.meta.flatErosion){
+						persistantErosion += Number(equipment.meta.flatErosion);
+					}
+				}
+			}
+		}
+		return persistantErosion;
+	}
+		
+	Game_Actor.prototype.changeEquip = function(slotId, item) {
+		if (this.tradeItemWithParty(item, this.equips()[slotId]) &&
+				(!item || this.equipSlots()[slotId] === item.etypeId)) {
+			this._equips[slotId].setObject(item);
+			this.refresh();
+		}
+		this.updatePersistantErosion();
+	};
+
+	Game_Actor.prototype.forceChangeEquip = function(slotId, item) {
+		this._equips[slotId].setObject(item);
+		this.releaseUnequippableItems(true);
+		this.refresh();
+		this.updatePersistantErosion();
+	};
+
 	
 	// Handles calling the erosion
 	Game_Action.prototype.apply = function(target) {
@@ -249,16 +343,9 @@
 	};
 	
 	// Handles removing erosion after battle
+	MRP_BM_ENDBATTLE_OLD = BattleManager.endBattle;
 	BattleManager.endBattle = function(result) {
-		this._phase = 'battleEnd';
-		if (this._eventCallback) {
-			this._eventCallback(result);
-		}
-		if (result === 0) {
-			$gameSystem.onBattleWin();
-		} else if (this._escaped) {
-			$gameSystem.onBattleEscape();
-		}
+		MRP_BM_ENDBATTLE_OLD.call(this);
 		$gameParty.removeErosion();
 	};
 	
