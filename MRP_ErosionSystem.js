@@ -2,7 +2,7 @@
 // Erosion System
 // MRP_ErosionSystem.js
 // By Magnus0808 || Magnus Rubin Peterson
-// Version 1.2
+// Version 1.2.1
 //=============================================================================
 
 /*:
@@ -35,6 +35,8 @@
  * erosion.
  *
  * [CHANGE LOG]
+ * Version 1.2.1:
+ *  + Compatibility Fixes (Hopefully removed most potentional compatibility issues)
  * Version 1.2:
  *	+ Made the <flatErosion:xxx> notetag work for Equipment. It adds permanent erosion while the equipment is worn.
  *	+ Made the <baseErosion::x.xxx> and <procentErosion:x.xxx> work for Classes. Classes has priority over Actors
@@ -151,7 +153,7 @@
 		var flatErosion = 0;
 		
 		if(this._leTbsDirectionalDmg) value += Math.floor(value * this._leTbsDirectionalDmg); // Compatible with LeTBS directional dmg
-		
+		console.log(this);
 		// Handle Skills
 		if(action){
 			var dataClass = action._item._dataClass;
@@ -191,12 +193,11 @@
 		}
 	}
 	
+	var MRP_EROSION_Gb_REGENHP_OLD = Game_Battler.prototype.regenerateHp;
 	Game_Battler.prototype.regenerateHp = function() {
+		MRP_EROSION_Gb_REGENHP_OLD.call(this);
 		var value = Math.floor(this.mhp * this.hrg);
 		value = Math.max(value, -this.maxSlipDamage());
-		if (value !== 0) {
-			this.gainHp(value);
-		}
 		if(ErosionSystem.negativeRegenErosion && value < 0){ // takes dmg
 			this.applyErosion(Math.abs(value), null);
 		}
@@ -298,49 +299,36 @@
 		}
 		return persistantErosion;
 	}
-		
+	
+	var MRP_ES_GA_CHANGEEQUIP_OLD = Game_Actor.prototype.changeEquip;
 	Game_Actor.prototype.changeEquip = function(slotId, item) {
-		if (this.tradeItemWithParty(item, this.equips()[slotId]) &&
-				(!item || this.equipSlots()[slotId] === item.etypeId)) {
-			this._equips[slotId].setObject(item);
-			this.refresh();
-		}
+		MRP_ES_GA_CHANGEEQUIP_OLD.call(this, slotId, item);
 		this.updatePersistantErosion();
 	};
 
+	var MRP_ES_GA_FORCEEQUIP_OLD = Game_Actor.prototype.forceChangeEquip;
 	Game_Actor.prototype.forceChangeEquip = function(slotId, item) {
-		this._equips[slotId].setObject(item);
-		this.releaseUnequippableItems(true);
-		this.refresh();
+		MRP_ES_GA_FORCEEQUIP_OLD.call(this, slotId, item);
 		this.updatePersistantErosion();
 	};
 
 	
 	// Handles calling the erosion
+	var MRP_EROSION_GA_APPLY_OLD = Game_Action.prototype.apply;
 	Game_Action.prototype.apply = function(target) {
-		var result = target.result();
-		this.subject().clearResult();
-		result.clear();
-		result.used = this.testApply(target);
-		result.missed = (result.used && Math.random() >= this.itemHit(target));
-		result.evaded = (!result.missed && Math.random() < this.itemEva(target));
-		result.physical = this.isPhysical();
-		result.drain = this.isDrain();
-		if (result.isHit()) {
-			if (this.item().damage.type > 0) {
-				result.critical = (Math.random() < this.itemCri(target));
-				var value = this.makeDamageValue(target, result.critical);
-				this.executeDamage(target, value);
-				target.applyErosion(value, this);
-			} else {
-				target.applyErosion(0, this);
-			}
-			this.item().effects.forEach(function(effect) {
-				this.applyItemEffect(target, effect);
-			}, this);
-			this.applyItemUserEffect(target);
+		MRP_EROSION_GA_APPLY_OLD.call(this, target);
+		if (!this.item().damage.type > 0) {
+			target.applyErosion(0, this);
+
 		}
 	};
+	
+	var MRP_EROSION_GA_EXECUTEDAMAGE_OLD = Game_Action.prototype.executeDamage;
+	Game_Action.prototype.executeDamage = function(target, value) {
+		MRP_EROSION_GA_EXECUTEDAMAGE_OLD.call(this, target, value);
+		target.applyErosion(value, this);
+	};
+	
 	
 	// Handles removing erosion after battle
 	MRP_BM_ENDBATTLE_OLD = BattleManager.endBattle;
