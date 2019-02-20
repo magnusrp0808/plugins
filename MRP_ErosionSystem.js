@@ -2,7 +2,7 @@
 // Erosion System
 // MRP_ErosionSystem.js
 // By Magnus0808 || Magnus Rubin Peterson
-// Version 1.2.2
+// Version 1.3
 //=============================================================================
 
 /*:
@@ -34,7 +34,23 @@
  * erosion rate, and can therefore potentionally deal an even higher amount of 
  * erosion.
  *
+ * [PLUGIN COMMANDS]
+ * The following plugin commands are available:
+ * 	RemoveErosion PARTY_INDEX AMOUNT
+ *	RemoveErosion all AMOUNT
+ * 	RemoveErosion all (This is the same as when you normally end a battle)
+ *
+ *	ApplyErosion PARTY_INDEX AMOUNT
+ * 	ApplyErosion all AMOUNT
+ *
+ * The PARTY_INDEX represent the position the actor have in the party.
+ * The AMOUNT represent how much erosion you want to remove/apply. However for
+ * RemoveErosion you can leave it blank and it will remove all erosion!
+ *
  * [CHANGE LOG]
+ * Version 1.3:
+ *	+ Added a parameter for if erosion should be removed after battle.
+ *	+ Added a couple of plugin commands.
  * Version 1.2.2:
  *	+ Bug fix (Healing should now no longer remove erosion)
  * Version 1.2.1:
@@ -58,14 +74,14 @@
  * @param Max Erosion Rate
  * @type Number
  * @decimals 3
- * @desc This is the min erosion rate in %.
+ * @desc This is the max erosion rate in %.
  * 1 = 100%
  * @default 0.500
  *
  * @param Min Erosion Rate
  * @type Number
  * @decimals 3
- * @desc This is the max erosion in %. This should always be lower than max erosion. 1 = 100%
+ * @desc This is the min erosion in %. This should always be lower than max erosion. 1 = 100%
  * @default 0.000
  *
  * @param Negative HP Regen Erosion
@@ -85,6 +101,12 @@
  * @desc If true then you regen health after each battle to have the same procent of health left
  * compared to what you had at the end of the battle.
  * @default true
+ *
+ * @param Remove Erosion After Battle
+ * @type Boolean
+ * @desc If true then erosion will be removed after battles. This is recommended on!
+ * @default true
+ *
  */
  
 (function() {
@@ -97,6 +119,49 @@
 	ErosionSystem.negativeRegenErosion = (String(ErosionSystem.Parameters['Negative HP Regen Erosion']) == 'true');
 	ErosionSystem.dieErosion = (String(ErosionSystem.Parameters['Can Die From Erosion']) == 'true');
 	ErosionSystem.stableHealth = (String(ErosionSystem.Parameters['Stable Health Procent']) == 'true');
+	ErosionSystem.removeErosionAfterBattle = (String(ErosionSystem.Parameters['Remove Erosion After Battle']) == 'true');
+	
+	// Handels Plugin Commands
+	var MRP_EROSION_GI_PLUGINCOMMAND_OLD = Game_Interpreter.prototype.pluginCommand;
+	Game_Interpreter.prototype.pluginCommand = function(command, args) {
+		MRP_EROSION_GI_PLUGINCOMMAND_OLD.call(this, command, args)
+		
+		if (command === 'RemoveErosion'){
+			if(args[0].toLowerCase() === "all"){
+				if(args[1]){
+					var value = Number(args[1]);
+					var members = $gameParty.allMembers();
+					for(var i = 0; i < members.length; i++){
+						members[i].applyFlatErosion(-value);
+					}
+				} else {
+					$gameParty.removeErosion();	
+				}
+			} else {
+				var index = args[0];
+				var member = $gameParty.allMembers()[index];
+				if(args[1]){
+					var value = Number(args[1]);
+					member.applyFlatErosion(-value);
+				} else {
+					member.removeErosion();
+				}
+			}
+		} else if (command === 'ApplyErosion') {
+			if(args[0].toLowerCase() === "all"){
+				var value = Number(args[1]);
+				var members = $gameParty.allMembers();
+				for(var i = 0; i < members.length; i++){
+					members[i].applyFlatErosion(value);
+				}
+			} else {
+				var index = args[0];
+				var value = Number(args[1]);
+				var member = $gameParty.allMembers()[index];
+				member.applyFlatErosion(value);
+			}
+		}
+	};
 	
 	// Changes to Game_Battler
 	var old_init = Game_Battler.prototype.initMembers;
@@ -133,9 +198,9 @@
 	Game_Battler.prototype.getErosionRate = function() {
 		var erosionRate = this.getBaseErosionRate();
 		// Handle States
-		let states = this.states();
+		var states = this.states();
 		for(var i = 0; i < states.length; i++){
-			let state = states[i];
+			var state = states[i];
 			if(state.meta.procentErosion){
 				erosionRate += Number(state.meta.procentErosion);
 			}
@@ -155,7 +220,6 @@
 		var flatErosion = 0;
 		
 		if(this._leTbsDirectionalDmg) value += Math.floor(value * this._leTbsDirectionalDmg); // Compatible with LeTBS directional dmg
-		console.log(this);
 		// Handle Skills
 		if(action){
 			var dataClass = action._item._dataClass;
@@ -182,8 +246,6 @@
 	}
 	
 	Game_Battler.prototype.applyFlatErosion = function(value){
-		console.log("Erosion Damaged: " + this._erosionDamaged)
-		console.log("Added Erosion: " + value)
 		if(this._erosionDamaged + value <= 0){ // The flat erosion removes all erosion
 			this._paramPlus[0] += this._erosionDamaged;
 			this._erosionDamaged = 0;
@@ -342,7 +404,7 @@
 	MRP_BM_ENDBATTLE_OLD = BattleManager.endBattle;
 	BattleManager.endBattle = function(result) {
 		MRP_BM_ENDBATTLE_OLD.call(this);
-		$gameParty.removeErosion();
+		if(ErosionSystem.removeErosionAfterBattle) $gameParty.removeErosion();
 	};
 	
 	Game_Party.prototype.removeErosion = function() {
