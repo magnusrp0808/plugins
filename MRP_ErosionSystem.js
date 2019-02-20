@@ -2,7 +2,7 @@
 // Erosion System
 // MRP_ErosionSystem.js
 // By Magnus0808 || Magnus Rubin Peterson
-// Version 1.2.1
+// Version 1.2.2
 //=============================================================================
 
 /*:
@@ -35,6 +35,8 @@
  * erosion.
  *
  * [CHANGE LOG]
+ * Version 1.2.2:
+ *	+ Bug fix (Healing should now no longer remove erosion)
  * Version 1.2.1:
  *  + Compatibility Fixes (Hopefully removed most potentional compatibility issues)
  * Version 1.2:
@@ -180,6 +182,8 @@
 	}
 	
 	Game_Battler.prototype.applyFlatErosion = function(value){
+		console.log("Erosion Damaged: " + this._erosionDamaged)
+		console.log("Added Erosion: " + value)
 		if(this._erosionDamaged + value <= 0){ // The flat erosion removes all erosion
 			this._paramPlus[0] += this._erosionDamaged;
 			this._erosionDamaged = 0;
@@ -317,7 +321,7 @@
 	var MRP_EROSION_GA_APPLY_OLD = Game_Action.prototype.apply;
 	Game_Action.prototype.apply = function(target) {
 		MRP_EROSION_GA_APPLY_OLD.call(this, target);
-		if (!this.item().damage.type > 0) {
+		if (target.result().isHit() && !(this.item().damage.type > 0)) {
 			target.applyErosion(0, this);
 
 		}
@@ -326,7 +330,9 @@
 	var MRP_EROSION_GA_EXECUTEDAMAGE_OLD = Game_Action.prototype.executeDamage;
 	Game_Action.prototype.executeDamage = function(target, value) {
 		MRP_EROSION_GA_EXECUTEDAMAGE_OLD.call(this, target, value);
-		target.applyErosion(value, this);
+		if (value > 0) {
+			target.applyErosion(value, this);
+		}
 	};
 	
 	
