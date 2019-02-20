@@ -332,6 +332,8 @@
 		MRP_EROSION_GA_EXECUTEDAMAGE_OLD.call(this, target, value);
 		if (value > 0) {
 			target.applyErosion(value, this);
+		} else {
+			target.applyErosion(0, this); // In case of flat erosion
 		}
 	};
 	
