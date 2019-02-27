@@ -1,5 +1,6 @@
 # plugins
-PlugIns for RPG Maker MV by me
+Plugins for RPG Maker MV by me
+Plugins in the requests folder are plugins made from requests that was not big enough to be made into a fully fledged plugin.
 
 TERMS OF USE
 Copyright (c) 2019 Magnus0808 || Magnus Rubin Peterson || Magnusrp0808
