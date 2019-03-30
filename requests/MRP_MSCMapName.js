@@ -15,6 +15,9 @@
  * @default false
 */
 
+var MRP = MRP || {};
+MRP.MSCMapName = MRP.MSCMapName || {};
+
 (function(){
 	var MSC_MapName = {};
 	MSC_MapName.FileFormat = PluginManager.parameters('MakeScreenCapture')['FileFormat'];
@@ -35,6 +38,7 @@
 		}
     };
 	
+	
 	Utils.isTestCapture = function() {
         return !MSC_MapName.TestOnly || Utils.isOptionValid('test');
     };
@@ -52,4 +56,59 @@
             return fileName + (number > 0 ? "_" + number.padZero(MSC_MapName.NumberDigit) : '');
         }
     };
+	
+	
+	// Error Window Stuff
+	MRP.MSCMapName._makeErrorHtml = Graphics._makeErrorHtml;
+	Graphics._makeErrorHtml = function(name, message) {
+		MRP.MSCMapName._errorWindow = MRP.MSCMapName.makeErrorWindow(name, message);
+		return MRP.MSCMapName._makeErrorHtml.call(this, name, message);
+	};
+	
+	MRP.MSCMapName._makeFullErrorHtml = Graphics._makeFullErrorHtml;
+	Graphics._makeFullErrorHtml = function(name, message, stack) {
+	  MRP.MSCMapName._errorWindow = MRP.MSCMapName.makeErrorWindow(name, message, stack);
+	  return MRP.MSCMapName._makeFullErrorHtml.call(this, name, message, stack);
+	};
+	
+	MRP.MSCMapName.Bitmap_snap = Bitmap.snap;
+	Bitmap.snap = function(stage) {
+		if(Graphics._errorPrinter.innerHTML) stage.addChild(MRP.MSCMapName._errorWindow);
+		return MRP.MSCMapName.Bitmap_snap.call(this, stage);
+	};
+	
+	MRP.MSCMapName.makeErrorWindow = function(name, message, stack) {
+		var errorWindow = new Window_Base(0, 0, Graphics.width, Graphics.height);
+		errorWindow.makeFontSmaller();
+		var x = 50;
+		var y = 50;
+		if(stack && stack.length > 0) {
+			name = stack[0].replace(/(<[^>]*>)/, '');
+			message = stack[1].replace(/(<[^>]*>)/, '');
+			
+			errorWindow.changeTextColor(errorWindow.crisisColor());
+			errorWindow.drawText(name, x, y);
+			y += 24 * 2;
+			errorWindow.drawText(message, x, y);
+			y += 24;
+			errorWindow.changeTextColor(errorWindow.normalColor());
+			for(var i = 2; i < stack.length - 1; i++){
+				var stackText = stack[i].replace(/(<[^>]*>)/gi, '');
+				errorWindow.drawText(stackText, x, y);
+				y += 24;
+			}
+			errorWindow.changeTextColor(errorWindow.crisisColor());
+			y += 24;
+			var restartText = stack[stack.length-1].replace(/(<[^>]*>)/gi, '');
+			errorWindow.drawText(restartText, x, y);
+		} else {
+			errorWindow.changeTextColor(errorWindow.crisisColor());
+			errorWindow.drawText(name, x, y);
+			y += 24 * 2;
+			errorWindow.changeTextColor(errorWindow.normalColor());
+			errorWindow.drawText(message, x, y);			
+		}
+		return errorWindow;
+	}
+	
 })();

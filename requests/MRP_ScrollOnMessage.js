@@ -36,7 +36,7 @@
 	};
 	
 	Window_Message.prototype.processWheel = function() {
-		if (this.isOpenAndActive() && !this.isAnySubWindowActive() && this._scrolledTime > scrollWaitTime) {
+		if (this.isOpenAndActive() && this.visible && !this.isAnySubWindowActive() && this._scrolledTime > scrollWaitTime) {
 			var threshold = 20;
 			if (TouchInput.wheelY >= threshold) {
 				this.scrollDown();
@@ -51,7 +51,6 @@
 	
 	Window_Message.prototype.scrollDown = function() {
 		if(!this.isAnySubWindowActive()){
-			this._showFast = true;
 			Input.update();
 			this.pause = false;
 			if (!this._textState) {
