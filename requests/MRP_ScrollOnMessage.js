@@ -12,21 +12,25 @@
  * Scroll down on a message to make it continue. If you have YEP_X_MessageBacklog
  * then the backlog will show when you scroll up on a message! 
 */
+var Imported = Imported || {};
+Imported.MRP_ScrollOnMessage = true;
 
+var MRP = MRP || {};
+MRP.ScrollOnMessage = MRP.ScrollOnMessage ||{};
 
 (function(){
-	var scrollWaitTime = 12;
+	MRP.ScrollOnMessage._scrollWaitTime = 12;
 	
-	var MRP_SCROLL_WM_INITMEMBERS_OLD = Window_Message.prototype.initMembers;
+	MRP.ScrollOnMessage.Window_Message_initMembers = Window_Message.prototype.initMembers;
 	Window_Message.prototype.initMembers = function() {
-		MRP_SCROLL_WM_INITMEMBERS_OLD.call(this);
+		MRP.ScrollOnMessage.Window_Message_initMembers.call(this);
 		this._scrolledTime = 0;
 	};
 	
 	
-	var MRP_SCROLL_WM_UPDATE_OLD = Window_Message.prototype.update;
+	MRP.ScrollOnMessage.Window_Message_update = Window_Message.prototype.update;
 	Window_Message.prototype.update = function() {
-		MRP_SCROLL_WM_UPDATE_OLD.call(this);
+		MRP.ScrollOnMessage.Window_Message_update.call(this);
 		this.processWheel();
 		this._scrolledTime += 1;
 	};
@@ -36,7 +40,7 @@
 	};
 	
 	Window_Message.prototype.processWheel = function() {
-		if (this.isOpenAndActive() && this.visible && !this.isAnySubWindowActive() && this._scrolledTime > scrollWaitTime) {
+		if (this.isOpenAndActive() && this.visible && !this.isAnySubWindowActive() && this._scrolledTime > MRP.ScrollOnMessage._scrollWaitTime) {
 			var threshold = 20;
 			if (TouchInput.wheelY >= threshold) {
 				this.scrollDown();
@@ -60,6 +64,6 @@
 	};
 
 	Window_Message.prototype.scrollUp = function() {
-		if(this._backlogWindow) this.openBacklogWindow();
+		if(Imported.YEP_X_MessageBacklog) this.openBacklogWindow();
 	};	
 })();
