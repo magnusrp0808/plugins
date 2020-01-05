@@ -83,9 +83,9 @@
 		if (!action.isForFriend()) {
 			return [];
 		} else if (action.isForAll()) {
-			return $SystemParty.members();
+			return $gameParty.members();
 		} else {
-			return [$SystemParty.members()[0]];
+			return [$gameParty.members()[0]];
 		}
 	};
 	
@@ -118,7 +118,7 @@
 		Window_MenuStatus.prototype.initialize.call(this, x, y);
 		this._formationMode = false;
 		this._pendingIndex = -1;
-		this._actor = $SystemParty.members()[0];
+		this._actor = $gameParty.members()[0];
 		this.refresh();
 	};
 
