@@ -20,7 +20,7 @@
  * @type Number
  * @decimals 2
  * @desc The speed the camera will move with when the mouse is by the border.
- * @default 0.10
+ * @default 0.20
  *
  * @param Always Show Player Move
  * @type Boolean
@@ -28,55 +28,61 @@
  * @default true
 */
 
+ var Imported = Imported || {};
+ Imported.MRP_CameraMouseMove = true;
+ 
+ var MRP = MRP || {};
+ MRP.CameraMouseMove = MRP.CameraMouseMove ||{};
+
 (function(){
-	var CameraMouseMove = {};
-	CameraMouseMove.Parameters = PluginManager.parameters('MRP_CameraMouseMove');
-	CameraMouseMove.on = true;
-	CameraMouseMove.borderDistance = Number(CameraMouseMove.Parameters['Border Distance']);
-	CameraMouseMove.moveSpeed = Number(CameraMouseMove.Parameters['Move Speed']);
-	CameraMouseMove.playerCenter = (String(CameraMouseMove.Parameters['Always Show Player Move']) == 'true');
 	
-	var MRP_CMM_GI_PLUGINCOMMAND_OLD = Game_Interpreter.prototype.pluginCommand;
+	MRP.CameraMouseMove.Parameters = PluginManager.parameters('MRP_CameraMouseMove');
+	MRP.CameraMouseMove.on = true;
+	MRP.CameraMouseMove.borderDistance = Number(MRP.CameraMouseMove.Parameters['Border Distance']);
+	MRP.CameraMouseMove.moveSpeed = Number(MRP.CameraMouseMove.Parameters['Move Speed']);
+	MRP.CameraMouseMove.playerCenter = (String(MRP.CameraMouseMove.Parameters['Always Show Player Move']) == 'true');
+	
+	MRP.CameraMouseMove.Game_Interpreter_pluginCommand = Game_Interpreter.prototype.pluginCommand;
 	Game_Interpreter.prototype.pluginCommand = function(command, args) {
-		MRP_CMM_GI_PLUGINCOMMAND_OLD.call(this, command, args)
+		MRP.CameraMouseMove.Game_Interpreter_pluginCommand.call(this, command, args)
 		
 		if (command === 'CameraMouseMove'){
 			switch(args[0].toLowerCase()){
 				case "on":
-					CameraMouseMove.on = true;
+					MRP.CameraMouseMove.on = true;
 					break;
 				case "off":
-					CameraMouseMove.on = false;
+					MRP.CameraMouseMove.on = false;
 					break;
 				case "toggle":
-					CameraMouseMove.on = !CameraMouseMove.on;
+					MRP.CameraMouseMove.on = !MRP.CameraMouseMove.on;
 					break;
 			}
 		}
 	};
 	
-	var MRP_CMM_GM_UPDATE_OLD = Game_Map.prototype.update;
+	MRP.CameraMouseMove.Game_Map_update = Game_Map.prototype.update;
 	Game_Map.prototype.update = function(sceneActive) {
-		MRP_CMM_GM_UPDATE_OLD.call(this, sceneActive);
+		MRP.CameraMouseMove.Game_Map_update.call(this, sceneActive);
 		this.updateCamera();
 	};
 	
 	Game_Map.prototype.updateCamera = function(){
-		if(CameraMouseMove.on) {
+		if(MRP.CameraMouseMove.on) {
 			var mouseX = TouchInput._mouseX;
 			var mouseY = TouchInput._mouseY;
 			
-			if(mouseX < CameraMouseMove.borderDistance) this.scrollLeft(CameraMouseMove.moveSpeed);
-			if(mouseY < CameraMouseMove.borderDistance) this.scrollUp(CameraMouseMove.moveSpeed);
-			if(mouseX > Graphics.boxWidth - CameraMouseMove.borderDistance) this.scrollRight(CameraMouseMove.moveSpeed);
-			if(mouseY > Graphics.boxHeight - CameraMouseMove.borderDistance) this.scrollDown(CameraMouseMove.moveSpeed);
+			if(mouseX < MRP.CameraMouseMove.borderDistance) this.scrollLeft(MRP.CameraMouseMove.moveSpeed);
+			if(mouseY < MRP.CameraMouseMove.borderDistance) this.scrollUp(MRP.CameraMouseMove.moveSpeed);
+			if(mouseX > Graphics.boxWidth - MRP.CameraMouseMove.borderDistance) this.scrollRight(MRP.CameraMouseMove.moveSpeed);
+			if(mouseY > Graphics.boxHeight - MRP.CameraMouseMove.borderDistance) this.scrollDown(MRP.CameraMouseMove.moveSpeed);
 		}	
 	}
 	
-	var MRP_CMM_GP_UPDATESCROLL_OLD = Game_Player.prototype.updateScroll;
+	MRP.CameraMouseMove.Game_Player_updateScroll = Game_Player.prototype.updateScroll;
 	Game_Player.prototype.updateScroll = function(lastScrolledX, lastScrolledY) {
-		MRP_CMM_GP_UPDATESCROLL_OLD.call(this, lastScrolledX, lastScrolledY);	
-		if(CameraMouseMove.playerCenter && this.isMoving()){
+		MRP.CameraMouseMove.Game_Player_updateScroll.call(this, lastScrolledX, lastScrolledY);	
+		if(MRP.CameraMouseMove.playerCenter && this.isMoving()){
 			if(this._realX + 1 < $gameMap._displayX) {
 				$gameMap.scrollLeft($gameMap._displayX + this.centerX() - this._realX);
 			}
@@ -93,9 +99,9 @@
 		
 	};
 	
-	var MRP_CMM_TI_ONMOUSEMOVE = TouchInput._onMouseMove;
+	MRP.CameraMouseMove.TouchInput__onMouseMove = TouchInput._onMouseMove;
 	TouchInput._onMouseMove = function(event) {
-		MRP_CMM_TI_ONMOUSEMOVE.call(this, event);
+		MRP.CameraMouseMove.TouchInput__onMouseMove.call(this, event);
 		this._mouseX = Graphics.pageToCanvasX(event.pageX);
 		this._mouseY = Graphics.pageToCanvasY(event.pageY);
 	};
