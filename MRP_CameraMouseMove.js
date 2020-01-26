@@ -8,8 +8,16 @@
  * @author Magnus0808
  *
  * @help Plug and play for default settings.
+ * You can use the middle mouse button to use the dragging movement function.
+ *
  * The following plugin command can be used to turn off/on the plugin:
  * CameraMouseMove On/Off/Toggle (depending on what you want)
+ *
+ * You can also turn off/on the dragging function:
+ * CameraMouseMove On/Off/Toggle drag (depending on what you want)
+ 
+ * @param Dragging Movement
+ * @
  *
  * @param Border Distance
  * @type Number
@@ -82,7 +90,7 @@
 			if(mouseY > Graphics.boxHeight - MRP.CameraMouseMove.borderDistance) this.scrollDown(MRP.CameraMouseMove.moveSpeed);
 		}
 		
-		if(TouchInput._middlePressed){
+		if(MRP.CameraMouseMove.dragOn && TouchInput._middlePressed){
 			var mouseX = TouchInput._mouseX;
 			var mouseY = TouchInput._mouseY;
 			
