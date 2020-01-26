@@ -2,6 +2,7 @@
 // Camera Mouse Move
 // MRP_CameraMouseMove.js
 // By Magnus0808 || Magnus Rubin Peterson
+// Version 1.1
 //=============================================================================
 /*:
  * @plugindesc Camera moves when the mouse is at edge of screen.
