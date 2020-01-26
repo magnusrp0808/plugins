@@ -38,6 +38,7 @@
 	
 	MRP.CameraMouseMove.Parameters = PluginManager.parameters('MRP_CameraMouseMove');
 	MRP.CameraMouseMove.on = true;
+	MRP.CameraMouseMove.dragOn = true;
 	MRP.CameraMouseMove.borderDistance = Number(MRP.CameraMouseMove.Parameters['Border Distance']);
 	MRP.CameraMouseMove.moveSpeed = Number(MRP.CameraMouseMove.Parameters['Move Speed']);
 	MRP.CameraMouseMove.playerCenter = (String(MRP.CameraMouseMove.Parameters['Always Show Player Move']) == 'true');
@@ -49,13 +50,16 @@
 		if (command === 'CameraMouseMove'){
 			switch(args[0].toLowerCase()){
 				case "on":
-					MRP.CameraMouseMove.on = true;
+					if(args[1] && args[1].toLowerCase() == "drag") MRP.CameraMouseMove.dragOn = true;
+					else MRP.CameraMouseMove.on = true;
 					break;
 				case "off":
-					MRP.CameraMouseMove.on = false;
+					if(args[1] && args[1].toLowerCase() == "drag") MRP.CameraMouseMove.dragOn = false;
+					else MRP.CameraMouseMove.on = false;
 					break;
 				case "toggle":
-					MRP.CameraMouseMove.on = !MRP.CameraMouseMove.on;
+					if(args[1] && args[1].toLowerCase() == "drag") MRP.CameraMouseMove.dragOn = !MRP.CameraMouseMove.dragOn;
+					else MRP.CameraMouseMove.on = !MRP.CameraMouseMove.on;
 					break;
 			}
 		}
@@ -76,8 +80,42 @@
 			if(mouseY < MRP.CameraMouseMove.borderDistance) this.scrollUp(MRP.CameraMouseMove.moveSpeed);
 			if(mouseX > Graphics.boxWidth - MRP.CameraMouseMove.borderDistance) this.scrollRight(MRP.CameraMouseMove.moveSpeed);
 			if(mouseY > Graphics.boxHeight - MRP.CameraMouseMove.borderDistance) this.scrollDown(MRP.CameraMouseMove.moveSpeed);
-		}	
+		}
+		
+		if(TouchInput._middlePressed){
+			var mouseX = TouchInput._mouseX;
+			var mouseY = TouchInput._mouseY;
+			
+			if($gameTemp._oldMouseX && $gameTemp._oldMouseY){
+				var moveX = (mouseX - $gameTemp._oldMouseX) / PIXI.ticker.shared.FPS;
+				var moveY = (mouseY - $gameTemp._oldMouseY) / PIXI.ticker.shared.FPS;
+				console.log(Math.abs(moveX) + " " + Math.abs(moveY))
+				moveX < 0 ? this.scrollRight(Math.abs(moveX)) : this.scrollLeft(Math.abs(moveX));
+				moveY < 0 ? this.scrollDown(Math.abs(moveY)) : this.scrollUp(Math.abs(moveY));
+				
+			}
+			
+			$gameTemp._oldMouseX = mouseX;
+			$gameTemp._oldMouseY = mouseY;
+		} else {
+			$gameTemp._oldMouseX = false;
+			$gameTemp._oldMouseY = false;
+		}
 	}
+	
+	MRP.CameraMouseMove.TouchInput__onMiddleButtonDown = TouchInput._onMiddleButtonDown;
+	TouchInput._onMiddleButtonDown = function(event) {
+		MRP.CameraMouseMove.TouchInput__onMiddleButtonDown.call(this, event);
+		this._middlePressed = true;
+	};
+	
+	MRP.CameraMouseMove.TouchInput__onMouseUp = TouchInput._onMouseUp;
+	TouchInput._onMouseUp = function(event) {
+		MRP.CameraMouseMove.TouchInput__onMouseUp.call(this, event);
+		if (event.button === 1) {
+			this._middlePressed = false;
+		}
+	};
 	
 	MRP.CameraMouseMove.Game_Player_updateScroll = Game_Player.prototype.updateScroll;
 	Game_Player.prototype.updateScroll = function(lastScrolledX, lastScrolledY) {
