@@ -17,7 +17,9 @@
  * CameraMouseMove On/Off/Toggle drag (depending on what you want)
  
  * @param Dragging Movement
- * @
+ * @type Boolean
+ * @desc Set to true to enable dragging movement
+ * @default true  
  *
  * @param Border Distance
  * @type Number
@@ -46,7 +48,7 @@
 	
 	MRP.CameraMouseMove.Parameters = PluginManager.parameters('MRP_CameraMouseMove');
 	MRP.CameraMouseMove.on = true;
-	MRP.CameraMouseMove.dragOn = true;
+	MRP.CameraMouseMove.dragOn = (String(MRP.CameraMouseMove.Parameters['Dragging Movement']) == 'true');
 	MRP.CameraMouseMove.borderDistance = Number(MRP.CameraMouseMove.Parameters['Border Distance']);
 	MRP.CameraMouseMove.moveSpeed = Number(MRP.CameraMouseMove.Parameters['Move Speed']);
 	MRP.CameraMouseMove.playerCenter = (String(MRP.CameraMouseMove.Parameters['Always Show Player Move']) == 'true');
