@@ -2,7 +2,7 @@
 // Camera Mouse Move
 // MRP_CameraMouseMove.js
 // By Magnus0808 || Magnus Rubin Peterson
-// Version 1.1
+// Version 1.1.1
 //=============================================================================
 /*:
  * @plugindesc Camera moves when the mouse is at edge of screen.
@@ -83,16 +83,7 @@
 	};
 	
 	Game_Map.prototype.updateCamera = function(){
-		if(MRP.CameraMouseMove.on) {
-			var mouseX = TouchInput._mouseX;
-			var mouseY = TouchInput._mouseY;
-			
-			if(mouseX < MRP.CameraMouseMove.borderDistance) this.scrollLeft(MRP.CameraMouseMove.moveSpeed);
-			if(mouseY < MRP.CameraMouseMove.borderDistance) this.scrollUp(MRP.CameraMouseMove.moveSpeed);
-			if(mouseX > Graphics.boxWidth - MRP.CameraMouseMove.borderDistance) this.scrollRight(MRP.CameraMouseMove.moveSpeed);
-			if(mouseY > Graphics.boxHeight - MRP.CameraMouseMove.borderDistance) this.scrollDown(MRP.CameraMouseMove.moveSpeed);
-		}
-		
+		if($gameTemp._withinBorderDistance) $gameTemp._withinBorderDistance = TouchInput.isMouseInCameraBoarder();
 		if(MRP.CameraMouseMove.dragOn && TouchInput._middlePressed){
 			var mouseX = TouchInput._mouseX;
 			var mouseY = TouchInput._mouseY;
@@ -108,6 +99,17 @@
 			
 			$gameTemp._oldMouseX = mouseX;
 			$gameTemp._oldMouseY = mouseY;
+		} else if(MRP.CameraMouseMove.on && !$gameTemp._withinBorderDistance) {
+			var mouseX = TouchInput._mouseX;
+			var mouseY = TouchInput._mouseY;
+			
+			if(mouseX < MRP.CameraMouseMove.borderDistance) this.scrollLeft(MRP.CameraMouseMove.moveSpeed);
+			if(mouseY < MRP.CameraMouseMove.borderDistance) this.scrollUp(MRP.CameraMouseMove.moveSpeed);
+			if(mouseX > Graphics.boxWidth - MRP.CameraMouseMove.borderDistance) this.scrollRight(MRP.CameraMouseMove.moveSpeed);
+			if(mouseY > Graphics.boxHeight - MRP.CameraMouseMove.borderDistance) this.scrollDown(MRP.CameraMouseMove.moveSpeed);
+			
+			$gameTemp._oldMouseX = false;
+			$gameTemp._oldMouseY = false;
 		} else {
 			$gameTemp._oldMouseX = false;
 			$gameTemp._oldMouseY = false;
@@ -124,9 +126,19 @@
 	TouchInput._onMouseUp = function(event) {
 		MRP.CameraMouseMove.TouchInput__onMouseUp.call(this, event);
 		if (event.button === 1) {
+			if(this.isMouseInCameraBoarder()) $gameTemp._withinBorderDistance = true;
 			this._middlePressed = false;
 		}
 	};
+	
+	TouchInput.isMouseInCameraBoarder = function(){
+			var mouseX = TouchInput._mouseX;
+			var mouseY = TouchInput._mouseY;
+			return (mouseX < MRP.CameraMouseMove.borderDistance || 
+					mouseY < MRP.CameraMouseMove.borderDistance ||
+					mouseX > Graphics.boxWidth - MRP.CameraMouseMove.borderDistance ||
+					mouseY > Graphics.boxHeight - MRP.CameraMouseMove.borderDistance);
+	}
 	
 	MRP.CameraMouseMove.Game_Player_updateScroll = Game_Player.prototype.updateScroll;
 	Game_Player.prototype.updateScroll = function(lastScrolledX, lastScrolledY) {
