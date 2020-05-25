@@ -78,7 +78,7 @@
 	// Changes to Scene_ItemBase
 	
 	Scene_ItemBase.prototype.itemTargetActors = function() {
-		var action = new System_Action(this.user());
+		var action = new Game_Action(this.user());
 		action.setItemObject(this.item());
 		if (!action.isForFriend()) {
 			return [];
@@ -91,7 +91,7 @@
 	
 	
 	Scene_ItemBase.prototype.determineItem = function() {
-		var action = new System_Action(this.user());
+		var action = new Game_Action(this.user());
 		var item = this.item();
 		action.setItemObject(item);
 		if (action.isForFriend()) {

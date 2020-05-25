@@ -91,7 +91,6 @@
 			if($gameTemp._oldMouseX && $gameTemp._oldMouseY){
 				var moveX = (mouseX - $gameTemp._oldMouseX) / PIXI.ticker.shared.FPS;
 				var moveY = (mouseY - $gameTemp._oldMouseY) / PIXI.ticker.shared.FPS;
-				console.log(Math.abs(moveX) + " " + Math.abs(moveY))
 				moveX < 0 ? this.scrollRight(Math.abs(moveX)) : this.scrollLeft(Math.abs(moveX));
 				moveY < 0 ? this.scrollDown(Math.abs(moveY)) : this.scrollUp(Math.abs(moveY));
 				
