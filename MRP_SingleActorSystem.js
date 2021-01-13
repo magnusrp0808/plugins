@@ -2,7 +2,7 @@
 // Single Actor System
 // MRP_SingleActorSystem.js
 // By Magnus0808 || Magnus Rubin Peterson
-// Version 1.1
+// Version 1.2
 //=============================================================================
 
 /*:
@@ -10,6 +10,9 @@
  * @author Magnus0808
  *
  * @help Plug and play.
+ * 
+ * If you want an item or skill to ignore this plugin you can add the following notetag:
+ *     <IgnoreSingleActorSystem>
  *
  * @param Status at Menu
  * @type boolean
@@ -39,6 +42,24 @@
 	MRP.SingleActorSystem.isEnabled = function(){
 		if(MRP.SingleActorSystem.onlySingleActor) return $gameParty.members().length == 1;
 		return true;
+	}
+
+	MRP.SingleActorSystem.ignoreEnabled = function(action){
+		if(!action._item) return false;
+		var dataClass = action._item._dataClass;
+		var object = null;
+		console.log(action)
+		switch(dataClass){
+			case "item":
+				object = $dataItems[action._item._itemId];
+				break;
+			case "skill":
+				object = $dataSkills[action._item._itemId];
+				break;
+			default:
+				return false;
+		}
+		return (object.meta["IgnoreSingleActorSystem"] == true);
 	}
 
 	//-----------------------------------------------------------------------------
@@ -75,8 +96,9 @@
 	
 	MRP.SingleActorSystem.Scene_Battle_onSelectAction = Scene_Battle.prototype.onSelectAction;
 	Scene_Battle.prototype.onSelectAction = function() {
-		if(MRP.SingleActorSystem.isEnabled()){
-			var action = BattleManager.inputtingAction();
+		var action = BattleManager.inputtingAction();
+		if(MRP.SingleActorSystem.isEnabled() && !MRP.SingleActorSystem.ignoreEnabled(action)){
+			console.log(action)
 			this._skillWindow.hide();
 			this._itemWindow.hide();
 			if (!action.needsSelection()) {
@@ -99,8 +121,8 @@
 	
 	MRP.SingleActorSystem.Scene_ItemBase_itemTargetActors = Scene_ItemBase.prototype.itemTargetActors;
 	Scene_ItemBase.prototype.itemTargetActors = function() {
-		if(MRP.SingleActorSystem.isEnabled()) {
-			var action = new Game_Action(this.user());
+		var action = new Game_Action(this.user());
+		if(MRP.SingleActorSystem.isEnabled() && !MRP.SingleActorSystem.ignoreEnabled(action)) {
 			action.setItemObject(this.item());
 			if (!action.isForFriend()) {
 				return [];
@@ -116,8 +138,8 @@
 	
 	MRP.SingleActorSystem.Scene_ItemBase_determineItem = Scene_ItemBase.prototype.determineItem;
 	Scene_ItemBase.prototype.determineItem = function() {
-		if(MRP.SingleActorSystem.isEnabled()) {
-			var action = new Game_Action(this.user());
+		var action = new Game_Action(this.user());
+		if(MRP.SingleActorSystem.isEnabled() && !MRP.SingleActorSystem.ignoreEnabled(action)) {
 			var item = this.item();
 			action.setItemObject(item);
 			if (action.isForFriend()) {
