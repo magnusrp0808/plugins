@@ -48,7 +48,6 @@
 		if(!action._item) return false;
 		var dataClass = action._item._dataClass;
 		var object = null;
-		console.log(action)
 		switch(dataClass){
 			case "item":
 				object = $dataItems[action._item._itemId];
@@ -98,7 +97,6 @@
 	Scene_Battle.prototype.onSelectAction = function() {
 		var action = BattleManager.inputtingAction();
 		if(MRP.SingleActorSystem.isEnabled() && !MRP.SingleActorSystem.ignoreEnabled(action)){
-			console.log(action)
 			this._skillWindow.hide();
 			this._itemWindow.hide();
 			if (!action.needsSelection()) {
@@ -122,8 +120,8 @@
 	MRP.SingleActorSystem.Scene_ItemBase_itemTargetActors = Scene_ItemBase.prototype.itemTargetActors;
 	Scene_ItemBase.prototype.itemTargetActors = function() {
 		var action = new Game_Action(this.user());
+		action.setItemObject(this.item());
 		if(MRP.SingleActorSystem.isEnabled() && !MRP.SingleActorSystem.ignoreEnabled(action)) {
-			action.setItemObject(this.item());
 			if (!action.isForFriend()) {
 				return [];
 			} else if (action.isForAll()) {
@@ -139,9 +137,8 @@
 	MRP.SingleActorSystem.Scene_ItemBase_determineItem = Scene_ItemBase.prototype.determineItem;
 	Scene_ItemBase.prototype.determineItem = function() {
 		var action = new Game_Action(this.user());
+		action.setItemObject(this.item());
 		if(MRP.SingleActorSystem.isEnabled() && !MRP.SingleActorSystem.ignoreEnabled(action)) {
-			var item = this.item();
-			action.setItemObject(item);
 			if (action.isForFriend()) {
 				this.onActorOk();
 			} else {
