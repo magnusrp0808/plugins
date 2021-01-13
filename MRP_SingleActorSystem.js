@@ -2,6 +2,7 @@
 // Single Actor System
 // MRP_SingleActorSystem.js
 // By Magnus0808 || Magnus Rubin Peterson
+// Version 1.1
 //=============================================================================
 
 /*:
@@ -14,6 +15,13 @@
  * @type boolean
  * @desc The status window is embedded in the main menu instead. 
  * @default true
+ * 
+ * @param onlySingleActor
+ * @text Only Single Actor
+ * @type boolean
+ * @desc Only enable the effects of this plugin if there is a single
+ * actor in the party
+ * @default false
  */
 
  var Imported = Imported || {};
@@ -26,7 +34,13 @@
 	
 	MRP.SingleActorSystem.Parameters = PluginManager.parameters('MRP_SingleActorSystem');
 	MRP.SingleActorSystem.statusWindow = String(MRP.SingleActorSystem.Parameters['Status at Menu']) == "true";
-	
+	MRP.SingleActorSystem.onlySingleActor = String(MRP.SingleActorSystem.Parameters['onlySingleActor']) == "true";
+
+	MRP.SingleActorSystem.isEnabled = function(){
+		if(MRP.SingleActorSystem.onlySingleActor) return $gameParty.members().length == 1;
+		return true;
+	}
+
 	//-----------------------------------------------------------------------------
 	// Scene_Menu
 	//
@@ -35,7 +49,7 @@
 	MRP.SingleActorSystem.Scene_Menu_create = Scene_Menu.prototype.create
 	Scene_Menu.prototype.create = function() {
 		MRP.SingleActorSystem.Scene_Menu_create.call(this);
-		if(MRP.SingleActorSystem.statusWindow) this.createSingleStatusWindow();
+		if(MRP.SingleActorSystem.isEnabled() && MRP.SingleActorSystem.statusWindow) this.createSingleStatusWindow();
 	};
 	
 	Scene_Menu.prototype.createSingleStatusWindow = function() {
@@ -47,9 +61,11 @@
 	MRP.SingleActorSystem.Scene_Menu_createCommandWindow = Scene_Menu.prototype.createCommandWindow
 	Scene_Menu.prototype.createCommandWindow = function() {
 		MRP.SingleActorSystem.Scene_Menu_createCommandWindow.call(this);
-		this._commandWindow.setHandler('skill',     this.onPersonalOk.bind(this));
-		this._commandWindow.setHandler('equip',     this.onPersonalOk.bind(this));
-		this._commandWindow.setHandler('status',    this.onPersonalOk.bind(this));
+		if(MRP.SingleActorSystem.isEnabled()){
+			this._commandWindow.setHandler('skill',     this.onPersonalOk.bind(this));
+			this._commandWindow.setHandler('equip',     this.onPersonalOk.bind(this));
+			this._commandWindow.setHandler('status',    this.onPersonalOk.bind(this));
+		}
 	};
 	
 	//-----------------------------------------------------------------------------
@@ -57,19 +73,23 @@
 	//
 	// Changes to Scene_Battle
 	
-	
+	MRP.SingleActorSystem.Scene_Battle_onSelectAction = Scene_Battle.prototype.onSelectAction;
 	Scene_Battle.prototype.onSelectAction = function() {
-		var action = BattleManager.inputtingAction();
-		this._skillWindow.hide();
-		this._itemWindow.hide();
-		if (!action.needsSelection()) {
-			this.selectNextCommand();
-		} else if (action.isForOpponent()) {
-			this.selectEnemySelection();
-		} else {
+		if(MRP.SingleActorSystem.isEnabled()){
 			var action = BattleManager.inputtingAction();
-			action.setTarget(0);
-			this.selectNextCommand();
+			this._skillWindow.hide();
+			this._itemWindow.hide();
+			if (!action.needsSelection()) {
+				this.selectNextCommand();
+			} else if (action.isForOpponent()) {
+				this.selectEnemySelection();
+			} else {
+				var action = BattleManager.inputtingAction();
+				action.setTarget(0);
+				this.selectNextCommand();
+			}
+		} else {
+			MRP.SingleActorSystem.Scene_Battle_onSelectAction.call(this);
 		}
 	};
 	//-----------------------------------------------------------------------------
@@ -77,29 +97,38 @@
 	//
 	// Changes to Scene_ItemBase
 	
+	MRP.SingleActorSystem.Scene_ItemBase_itemTargetActors = Scene_ItemBase.prototype.itemTargetActors;
 	Scene_ItemBase.prototype.itemTargetActors = function() {
-		var action = new Game_Action(this.user());
-		action.setItemObject(this.item());
-		if (!action.isForFriend()) {
-			return [];
-		} else if (action.isForAll()) {
-			return $gameParty.members();
+		if(MRP.SingleActorSystem.isEnabled()) {
+			var action = new Game_Action(this.user());
+			action.setItemObject(this.item());
+			if (!action.isForFriend()) {
+				return [];
+			} else if (action.isForAll()) {
+				return $gameParty.members();
+			} else {
+				return [$gameParty.members()[0]];
+			}
 		} else {
-			return [$gameParty.members()[0]];
+			return MRP.SingleActorSystem.Scene_ItemBase_itemTargetActors.call(this);
 		}
 	};
 	
-	
+	MRP.SingleActorSystem.Scene_ItemBase_determineItem = Scene_ItemBase.prototype.determineItem;
 	Scene_ItemBase.prototype.determineItem = function() {
-		var action = new Game_Action(this.user());
-		var item = this.item();
-		action.setItemObject(item);
-		if (action.isForFriend()) {
-			this.onActorOk();
+		if(MRP.SingleActorSystem.isEnabled()) {
+			var action = new Game_Action(this.user());
+			var item = this.item();
+			action.setItemObject(item);
+			if (action.isForFriend()) {
+				this.onActorOk();
+			} else {
+				this.useItem();
+			}
+			this.activateItemWindow();
 		} else {
-			this.useItem();
+			MRP.SingleActorSystem.Scene_ItemBase_determineItem.call(this);
 		}
-		this.activateItemWindow();
 	};
 	
 	//-----------------------------------------------------------------------------
